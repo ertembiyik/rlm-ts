@@ -22,11 +22,13 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv pip install --system ruff
+          uv pip install --system ruff ty
 
       - name: Run ruff linting
-        run: ruff check .
+        run: ruff check --config=pyproject.toml .
 
       - name: Run ruff formatting check
-        run: ruff format --check .
+        run: ruff format --check --config=pyproject.toml .
 
+      - name: Run ty type checking
+        run: ty check --exit-zero --output-format=concise

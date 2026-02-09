@@ -22,33 +22,22 @@ A complete guide to installing and configuring RLM for your projects.
 
 ### Prerequisites
 
-- Python 3.11 or higher
-- An API key from a supported LLM provider (OpenAI, Anthropic, etc.)
+- [Bun](https://bun.sh/)
+- Python 3.11 or higher (for REPL sandbox execution)
+- An API key from a supported LLM provider (OpenAI, Anthropic, Google, etc.)
 
-### Using uv (Recommended)
+### Using Bun
 
 ```bash
-# Install uv
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Create and activate virtual environment
-uv init && uv venv --python 3.12
-source .venv/bin/activate
-
-# Install RLM in editable mode
-uv pip install -e .
+bun add rlm
 ```
 
-### Optional: Modal Support
-
-For cloud-based sandboxed execution:
+You'll also need at least one AI SDK provider package:
 
 ```bash
-# Install Modal extra
-uv pip install -e ".[modal]"
-
-# Authenticate Modal
-modal setup
+bun add @ai-sdk/openai    # For OpenAI models
+bun add @ai-sdk/anthropic  # For Anthropic models
+bun add @ai-sdk/google     # For Google models
 ```
 
 ### Optional: Docker Support
@@ -56,7 +45,6 @@ modal setup
 For containerized execution, ensure Docker is installed and running:
 
 ```bash
-# Verify Docker is available
 docker --version
 ```
 
@@ -66,51 +54,46 @@ docker --version
 
 ### Step 1: Set Up API Keys
 
-Create a `.env` file in your project root:
+Set environment variables for your provider:
+
+```bash
+export OPENAI_API_KEY=sk-...
+export ANTHROPIC_API_KEY=sk-ant-...
+```
+
+Or use a `.env` file with `dotenv`:
 
 ```bash
 # .env
 OPENAI_API_KEY=sk-...
 ANTHROPIC_API_KEY=sk-ant-...
-PORTKEY_API_KEY=...
 ```
 
 ### Step 2: Basic Usage
 
-```python
-import os
-from dotenv import load_dotenv
-from rlm import RLM
+```typescript
+import { RLM } from "rlm";
+import { openai } from "@ai-sdk/openai";
 
-load_dotenv()
+const rlm = new RLM({
+  model: openai("gpt-4o"),
+});
 
-# Create RLM instance
-rlm = RLM(
-    backend="openai",
-    backend_kwargs={
-        "api_key": os.getenv("OPENAI_API_KEY"),
-        "model_name": "gpt-4o",
-    },
-)
-
-# Make a completion call
-result = rlm.completion("Calculate the 50th Fibonacci number using Python.")
-print(result.response)
+const result = await rlm.completion(
+  "Calculate the 50th Fibonacci number using Python."
+);
+console.log(result.response);
 ```
 
 ### Step 3: Enable Verbose Output
 
 See what the RLM is doing step by step:
 
-```python
-rlm = RLM(
-    backend="openai",
-    backend_kwargs={
-        "api_key": os.getenv("OPENAI_API_KEY"),
-        "model_name": "gpt-4o",
-    },
-    verbose=True,  # Enable rich console output
-)
+```typescript
+const rlm = new RLM({
+  model: openai("gpt-4o"),
+  verbose: true,
+});
 ```
 
 This will display:
@@ -127,160 +110,121 @@ This will display:
 
 | Argument | Type | Default | Description |
 |:---------|:-----|:--------|:------------|
-| `backend` | `str` | `"openai"` | LM provider backend |
-| `backend_kwargs` | `dict` | `None` | Backend-specific configuration |
-| `environment` | `str` | `"local"` | Execution environment type |
-| `environment_kwargs` | `dict` | `None` | Environment configuration |
-| `max_depth` | `int` | `1` | Maximum recursion depth |
-| `max_iterations` | `int` | `30` | Max REPL iterations per call |
-| `custom_system_prompt` | `str` | `None` | Override default system prompt |
-| `other_backends` | `list` | `None` | Additional backends for sub-calls |
-| `other_backend_kwargs` | `list` | `None` | Configs for additional backends |
-| `logger` | `RLMLogger` | `None` | Logger for trajectory tracking |
-| `verbose` | `bool` | `False` | Enable console output |
+| `model` | `LanguageModelV1` | *required* | AI SDK model instance |
+| `sandbox` | `SandboxType` | `"local"` | Execution sandbox type |
+| `sandboxKwargs` | `Record<string, unknown>` | `undefined` | Sandbox configuration |
+| `maxDepth` | `number` | `1` | Maximum recursion depth |
+| `maxIterations` | `number` | `30` | Max REPL iterations per call |
+| `customSystemPrompt` | `string` | `undefined` | Override default system prompt |
+| `subModel` | `LanguageModelV1` | `undefined` | Model for sub-calls via `llm_query()` |
+| `logger` | `RLMLogger` | `undefined` | Logger for trajectory tracking |
+| `verbose` | `boolean` | `false` | Enable console output |
+| `persistent` | `boolean` | `false` | Reuse sandbox across calls |
 
 ### The `completion()` Method
 
-```python
-result = rlm.completion(
-    prompt="Your input text or context",
-    root_prompt="Optional: A short prompt visible to the root LM"
-)
+```typescript
+const result = await rlm.completion(
+  "Your input text or context",
+  "Optional: A short prompt visible to the root LM"
+);
 ```
 
 **Parameters:**
-- `prompt`: The main context/input (string or dict). This becomes the `context` variable in the REPL.
-- `root_prompt`: Optional hint shown to the root LM (useful for Q&A tasks).
+- `prompt`: The main context/input (string or object). This becomes the `context` variable in the REPL.
+- `rootPrompt`: Optional hint shown to the root LM (useful for Q&A tasks).
 
 **Returns:** `RLMChatCompletion` with:
 - `response`: The final answer string
-- `usage_summary`: Token usage statistics
-- `execution_time`: Total time in seconds
-- `root_model`: Model name used
+- `usageSummary`: Token usage statistics
+- `executionTime`: Total time in seconds
+- `rootModel`: Model ID used
 - `prompt`: Original input
 
 ---
 
-## Choosing an Environment
+## Choosing a Sandbox
 
-RLM supports three execution environments:
+RLM supports two execution sandboxes. Both run Python REPLs for code execution.
 
 ### Local (Default)
 
-Code runs in the same Python process with sandboxed builtins.
+Code runs via Python `child_process` with JSON-based state persistence.
 
-```python
-rlm = RLM(
-    backend="openai",
-    backend_kwargs={"model_name": "gpt-4o"},
-    environment="local",
-)
+```typescript
+const rlm = new RLM({
+  model: openai("gpt-4o"),
+  sandbox: "local",
+});
 ```
 
-**Pros:** Fast, no setup required  
+**Pros:** Fast, no setup required
 **Cons:** Less isolation from host process
 
 ### Docker
 
 Code runs in a Docker container with full isolation.
 
-```python
-rlm = RLM(
-    backend="openai",
-    backend_kwargs={"model_name": "gpt-4o"},
-    environment="docker",
-    environment_kwargs={
-        "image": "python:3.11-slim",  # Custom image
-    },
-)
+```typescript
+const rlm = new RLM({
+  model: openai("gpt-4o"),
+  sandbox: "docker",
+  sandboxKwargs: {
+    image: "python:3.11-slim",
+  },
+});
 ```
 
-**Pros:** Containerized isolation, reproducible  
+**Pros:** Containerized isolation, reproducible
 **Cons:** Requires Docker, slower startup
-
-### Modal
-
-Code runs in Modal's cloud sandboxes for full isolation.
-
-```python
-rlm = RLM(
-    backend="openai",
-    backend_kwargs={"model_name": "gpt-4o"},
-    environment="modal",
-    environment_kwargs={
-        "app_name": "my-rlm-app",
-        "timeout": 600,
-    },
-)
-```
-
-**Pros:** Cloud-native, scalable, fully isolated  
-**Cons:** Requires Modal account, network latency
 
 ---
 
-## Choosing a Backend
+## Choosing a Provider
+
+This implementation uses the [Vercel AI SDK](https://sdk.vercel.ai/), so any compatible provider works:
 
 ### OpenAI
 
-```python
-rlm = RLM(
-    backend="openai",
-    backend_kwargs={
-        "api_key": os.getenv("OPENAI_API_KEY"),
-        "model_name": "gpt-4o",
-        # Optional: custom base URL
-        # "base_url": "https://api.openai.com/v1",
-    },
-)
+```typescript
+import { openai } from "@ai-sdk/openai";
+
+const rlm = new RLM({
+  model: openai("gpt-4o"),
+});
 ```
 
 ### Anthropic
 
-```python
-rlm = RLM(
-    backend="anthropic",
-    backend_kwargs={
-        "api_key": os.getenv("ANTHROPIC_API_KEY"),
-        "model_name": "claude-sonnet-4-20250514",
-    },
-)
+```typescript
+import { anthropic } from "@ai-sdk/anthropic";
+
+const rlm = new RLM({
+  model: anthropic("claude-sonnet-4-20250514"),
+});
 ```
 
-### Portkey (Router)
+### Google
 
-```python
-rlm = RLM(
-    backend="portkey",
-    backend_kwargs={
-        "api_key": os.getenv("PORTKEY_API_KEY"),
-        "model_name": "@openai/gpt-5-nano",  # Portkey model format
-    },
-)
+```typescript
+import { google } from "@ai-sdk/google";
+
+const rlm = new RLM({
+  model: google("gemini-2.0-flash"),
+});
 ```
 
-### OpenRouter
+### Sub-Models for Recursive Calls
 
-```python
-rlm = RLM(
-    backend="openrouter",
-    backend_kwargs={
-        "api_key": os.getenv("OPENROUTER_API_KEY"),
-        "model_name": "openai/gpt-4o",
-    },
-)
-```
+```typescript
+const rlm = new RLM({
+  model: openai("gpt-4o"),
+  subModel: openai("gpt-4o-mini"),
+});
 
-### vLLM (Local)
-
-```python
-rlm = RLM(
-    backend="vllm",
-    backend_kwargs={
-        "base_url": "http://localhost:8000/v1",  # Required
-        "model_name": "meta-llama/Llama-3-70b",
-    },
-)
+// Inside the REPL, code can call:
+// llm_query(prompt)         # Uses default (gpt-4o)
+// llm_query(prompt, model)  # Uses sub-model
 ```
 
 ---
@@ -289,22 +233,20 @@ rlm = RLM(
 
 ### Enable Logging
 
-```python
-from rlm import RLM
-from rlm.logger import RLMLogger
+```typescript
+import { RLM, RLMLogger } from "rlm";
+import { openai } from "@ai-sdk/openai";
 
-# Create logger
-logger = RLMLogger(log_dir="./logs")
+const logger = new RLMLogger("./logs");
 
-rlm = RLM(
-    backend="openai",
-    backend_kwargs={"model_name": "gpt-4o"},
-    logger=logger,
-    verbose=True,
-)
+const rlm = new RLM({
+  model: openai("gpt-4o"),
+  logger,
+  verbose: true,
+});
 
-result = rlm.completion("...")
-# Logs saved to ./logs/rlm_TIMESTAMP_UUID.jsonl
+const result = await rlm.completion("...");
+// Logs saved to ./logs/rlm_TIMESTAMP_UUID.jsonl
 ```
 
 ### Log File Format
@@ -323,8 +265,8 @@ Use the included visualizer to explore trajectories:
 
 ```bash
 cd visualizer/
-npm install
-npm run dev  # Opens at localhost:3001
+bun install
+bun run dev  # Opens at localhost:3001
 ```
 
 Upload `.jsonl` log files to visualize:
@@ -338,6 +280,3 @@ Upload `.jsonl` log files to visualize:
 ## Next Steps
 
 - [API Reference](api/rlm.md) - Complete RLM class documentation
-- [Environments](environments/) - Deep dive into each environment
-- [Backends](backends.md) - Detailed backend configuration
-

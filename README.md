@@ -29,13 +29,13 @@ This TypeScript implementation provides an extensible inference engine for using
 ## Quick Setup
 
 ```bash
-bun add rlm
+bun add rlm-ts
 ```
 
 Requires [Bun](https://bun.sh/) and Python 3.11+ (for REPL sandbox execution).
 
 ```typescript
-import { RLM } from "rlm";
+import { RLM } from "rlm-ts";
 import { openai } from "@ai-sdk/openai";
 
 const rlm = new RLM({
@@ -54,8 +54,8 @@ console.log(result.response);
 
 Clone the repository and install dependencies:
 ```bash
-git clone https://github.com/alexzhang13/rlm.git
-cd rlm
+git clone https://github.com/ertembiyik/rlm-ts.git
+cd rlm-ts
 bun install
 bun run build
 ```
@@ -127,7 +127,7 @@ If you use this code or repository in your research, please cite:
 ## Optional Debugging: Visualizing RLM Trajectories
 We additionally provide a simple visualizer tool to examine and view the code, sub-LM, and root-LM calls of an RLM trajectory. To save log files (`.jsonl`) on every completion call that can be viewed in the visualizer, initialize the `RLMLogger` object and pass it into the `RLM` on initialization:
 ```typescript
-import { RLM, RLMLogger } from "rlm";
+import { RLM, RLMLogger } from "rlm-ts";
 import { openai } from "@ai-sdk/openai";
 
 const logger = new RLMLogger("./logs");

@@ -29,7 +29,7 @@ A complete guide to installing and configuring RLM for your projects.
 ### Using Bun
 
 ```bash
-bun add rlm
+bun add rlm-ts
 ```
 
 You'll also need at least one AI SDK provider package:
@@ -72,7 +72,7 @@ ANTHROPIC_API_KEY=sk-ant-...
 ### Step 2: Basic Usage
 
 ```typescript
-import { RLM } from "rlm";
+import { RLM } from "rlm-ts";
 import { openai } from "@ai-sdk/openai";
 
 const rlm = new RLM({
@@ -234,7 +234,7 @@ const rlm = new RLM({
 ### Enable Logging
 
 ```typescript
-import { RLM, RLMLogger } from "rlm";
+import { RLM, RLMLogger } from "rlm-ts";
 import { openai } from "@ai-sdk/openai";
 
 const logger = new RLMLogger("./logs");

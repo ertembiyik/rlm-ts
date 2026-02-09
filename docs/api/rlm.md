@@ -24,7 +24,7 @@ Complete API documentation for the core RLM class.
 The `RLM` class is the main entry point for Recursive Language Model completions. It wraps an AI SDK model and execution sandbox to enable iterative, code-augmented reasoning.
 
 ```typescript
-import { RLM } from "rlm";
+import { RLM } from "rlm-ts";
 import { openai } from "@ai-sdk/openai";
 
 const rlm = new RLM({
@@ -192,7 +192,7 @@ const rlm = new RLM({
 Logger for saving iteration trajectories to disk.
 
 ```typescript
-import { RLMLogger } from "rlm";
+import { RLMLogger } from "rlm-ts";
 
 const logger = new RLMLogger("./logs");
 new RLM({ model: openai("gpt-4o"), logger });
@@ -368,7 +368,7 @@ Each `completion()` call:
 ## Example: Full Configuration
 
 ```typescript
-import { RLM, RLMLogger } from "rlm";
+import { RLM, RLMLogger } from "rlm-ts";
 import { anthropic } from "@ai-sdk/anthropic";
 import { openai } from "@ai-sdk/openai";
 

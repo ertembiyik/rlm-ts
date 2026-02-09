@@ -10,7 +10,7 @@
  *
  * @example
  * ```typescript
- * import { RLM } from "rlm";
+ * import { RLM } from "rlm-ts";
  * import { openai } from "@ai-sdk/openai";
  *
  * const rlm = new RLM({

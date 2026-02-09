@@ -1,10 +1,19 @@
 {
-  "name": "rlm",
+  "name": "rlm-ts",
   "version": "0.1.0",
   "description": "Recursive Language Models - TypeScript implementation with AI SDK",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ertembiyik/rlm-ts.git"
+  },
+  "author": "Alex Zhang",
+  "bugs": {
+    "url": "https://github.com/ertembiyik/rlm-ts/issues"
+  },
+  "homepage": "https://github.com/ertembiyik/rlm-ts#readme",
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
